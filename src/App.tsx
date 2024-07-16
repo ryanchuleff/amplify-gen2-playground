@@ -1,39 +1,83 @@
-import { useEffect, useState } from "react";
-import type { Schema } from "../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
+import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
+import { GlobalLoadingIndicator, Splash, NotFound } from '@/components/common';
+import { Spinner, Toaster } from '@/components/ui';
+import { queryClient } from '@/main';
+import {
+  RouterProvider,
+  ErrorComponent,
+  createRouter,
+} from '@tanstack/react-router'
+import { useEffect, Suspense } from 'react';
 
-const client = generateClient<Schema>();
+// Import the generated route tree
+import { routeTree } from './routeTree.gen';
+import { generateClient } from 'aws-amplify/api';
 
-function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+import type { Schema } from '../amplify/data/resource'
 
-  useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
+const router = createRouter({
+  routeTree,
+  // context: {
+  //   auth: undefined!,
+  //   clientId: undefined!,
+  //   // queryClient,
+  // },
+  defaultPreload: 'intent',
+  // Since we're using React Query, we don't want loader calls to ever be stale
+  // This will ensure that the loader is always called when the route is preloaded or visited
+  defaultPreloadStaleTime: 0,
+  defaultPendingComponent: () => (
+    <div className={`p-2 text-2xl`}>
+      <Spinner />
+    </div>
+  ),
+  defaultNotFoundComponent: () => <NotFound />,
+  defaultErrorComponent: ({ error }) => <ErrorComponent error={error} />,
+})
 
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router
   }
+}
+
+const InnerApp = () => {
+  const auth = useAuthenticator();
 
   return (
-    <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
-        ))}
-      </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-          Review next step of this tutorial.
-        </a>
-      </div>
-    </main>
+    <Suspense fallback={<Splash />}>  
+      <RouterProvider router={router} context={{ 
+        auth,
+        queryClient,
+      }} />
+    </Suspense>
+  )
+};
+
+const amplifyClient = generateClient<Schema>();
+
+const App = () => {
+
+  useEffect(() => {
+    const fetch = async () => {
+      const results = await amplifyClient.queries.getClientBySlug(
+        { slug: 'samplegyms' },
+        { authMode: 'identityPool' }
+      )
+      console.log('app levevl: ', results);
+    };
+    fetch();
+  }, []);
+
+  return (
+    <Authenticator.Provider>
+      <GlobalLoadingIndicator />
+
+      <InnerApp />
+
+      <Toaster />
+      {/* <TanStackRouterDevtools position="bottom-right" /> */}
+    </Authenticator.Provider> 
   );
 }
 

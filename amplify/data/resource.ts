@@ -1,4 +1,5 @@
-import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { type ClientSchema, defineData } from "@aws-amplify/backend";
+import { schema as customizedSchema } from './schema.custom';
 
 /*== STEP 1 ===============================================================
 The section below creates a Todo database table with a "content" field. Try
@@ -6,24 +7,33 @@ adding a new "isDone" field as a boolean. The authorization rule below
 specifies that any user authenticated via an API key can "create", "read",
 "update", and "delete" any "Todo" records.
 =========================================================================*/
-const schema = a.schema({
-  Todo: a
-    .model({
-      content: a.string(),
-    })
-    .authorization((allow) => [allow.publicApiKey()]),
-});
+// const schema = a.schema({
+//   Todo: a
+//     .model({
+//       content: a.string(),
+//     })
+//     .authorization((allow) => [allow.publicApiKey()]),
+// });
 
-export type Schema = ClientSchema<typeof schema>;
+// Add a global authorization rule
+// const sqlSchema = customizedSchema.authorization(allow => allow.guest())
+
+// Use the a.combine() operator to stitch together the models backed by DynamoDB
+// and the models backed by Postgres or MySQL databases.
+// const combinedSchema = a.combine([customizedSchema, sqlSchema]);
+
+// Don't forget to update your client types to take into account the types from
+// both schemas.
+export type Schema = ClientSchema<typeof customizedSchema>;
 
 export const data = defineData({
-  schema,
+  schema: customizedSchema,
   authorizationModes: {
-    defaultAuthorizationMode: "apiKey",
+    defaultAuthorizationMode: "userPool",
     // API Key is used for a.allow.public() rules
-    apiKeyAuthorizationMode: {
-      expiresInDays: 30,
-    },
+    // apiKeyAuthorizationMode: {
+    //   expiresInDays: 30,
+    // },
   },
 });
 

@@ -23,3 +23,7 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 ## License
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
+
+
+
+postgres://perchadmin:nABwZ!Fa8u1ID0J_*BKWP78a.q96@perch-core-gen2-dev1.c96yms84iolr.us-west-2.rds.amazonaws.com:5432/perch_core
